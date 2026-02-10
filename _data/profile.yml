@@ -57,9 +57,10 @@ education:
 
 experience:
  - name: School of Economics, Fudan University
-   logo: /asset/images/badges/Fudan0.jpg
+   logo: /assets/images/badges/Fudan0.jpg
    position: Postdoctoral Researcher
    date: 2025 - Present
+   
  - name: Hunter College, City University of New York
    logo: /assets/images/badges/Hunter.png
    position: Adjunct Lecturer
