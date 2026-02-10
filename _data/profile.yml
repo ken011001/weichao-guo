@@ -25,11 +25,15 @@ short_bio: >-
     Welcome!
   </p>
   <p>
-    I hold a Ph.D. in Economics from the City University of New York, the Graduate Center.
+    I hold a Ph.D. in Economics from the Graduate Center, City University of New York (CUNY).
   </p>
   <p>
-    My research interests include Applied Microeconomic Theory, Applied Econometrics, the Digital Economy, Development, and Regional Growth Inequality.
+  I am now a Postdoctoral Fellow at School of Economics, Fudan University.
   </p>
+  <p>
+   My research interests include Applied Microeconomic Theory, Causal Data Analysis, the Digital Economy, Development and Regional Growth Inequality.
+  </p>
+  Welcome!
 
 
 portrait_url: /assets/images/photos/portrait.jpg
@@ -53,6 +57,10 @@ education:
   date: 2015
 
 experience:
+ - name: Fudan University
+   logo: /asset/images/badges/Fudan.png
+   position: Postdoctoral Researcher
+   date: 2025 - Present
  - name: Hunter College, City University of New York
    logo: /assets/images/badges/Hunter.png
    position: Adjunct Lecturer
