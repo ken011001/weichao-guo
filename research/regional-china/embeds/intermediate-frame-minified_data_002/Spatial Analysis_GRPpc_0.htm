@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta charset="UTF-8">
+  <title>LISA Map Viewer (2x2)</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 20px;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 90%;
+    }
+
+    .grid-container img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 15px;
+      width: 90%;
+    }
+
+    .controls button {
+      font-size: 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    .controls input[type=range] {
+      width: 80%;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Image Grid -->
+  <div class="grid-container">
+    <img id="img-aa" src="Heatmap_GRPpc_global_scale_legend/Heatmap_GRPpc_global_scale_legend_2007Q4.png" alt="">
+    <img id="img-bb" src="Heatmap_GRPpc_local_scale_legend/Heatmap_GRPpc_local_scale_legend_2007Q4.png" alt="">
+    <img id="img-cc" src="LISA_map_GRPpc_0.05_legend/LISA_map_GRPpc_0.05_legend_2007Q4.png" alt="">
+    <img id="img-dd" src="lisa_scatterplot_GRPpc_0.05/lisa_scatterplot_GRPpc_0.05_2007Q4.png" alt="">
+  </div>
+
+  <!-- Controls below the grid -->
+  <div class="controls">
+    <button id="playPause">⏸️</button>
+    <input type="range" id="timeline" min="0" max="75" value="11">
+  </div>
+
+  <script>
+    const quarters = [];
+    for (let year = 2005; year <= 2023; year++) {
+      for (let q = 1; q <= 4; q++) {
+        quarters.push(`${year}Q${q}`);
+      }
+    }
+
+    const slider = document.getElementById('timeline');
+    const playPauseBtn = document.getElementById('playPause');
+
+    const imgAA = document.getElementById('img-aa');
+    const imgBB = document.getElementById('img-bb');
+    const imgCC = document.getElementById('img-cc');
+    const imgDD = document.getElementById('img-dd');
+
+    let currentIndex = 0;
+    let isPlaying = true;
+    let interval;
+
+    function showFrame(index) {
+      const quarter = quarters[index];
+      imgAA.src = `Heatmap_GRPpc_global_scale_legend/Heatmap_GRPpc_global_scale_legend_${quarter}.png`;
+      imgBB.src = `Heatmap_GRPpc_local_scale_legend/Heatmap_GRPpc_local_scale_legend_${quarter}.png`;
+      imgCC.src = `LISA_map_GRPpc_0.05_legend/LISA_map_GRPpc_0.05_legend_${quarter}.png`;
+      imgDD.src = `lisa_scatterplot_GRPpc_0.05/lisa_scatterplot_GRPpc_0.05_${quarter}.png`;
+
+      slider.value = index;
+      currentIndex = index;
+    }
+
+    function play() {
+      interval = setInterval(() => {
+        if (currentIndex < quarters.length - 1) {
+          showFrame(currentIndex + 1);
+        } else {
+          pause();
+        }
+      }, 500);
+      isPlaying = true;
+      playPauseBtn.textContent = '⏸️';
+    }
+
+    function pause() {
+      clearInterval(interval);
+      isPlaying = false;
+      playPauseBtn.textContent = '▶️';
+    }
+
+    // Initial frame
+    showFrame(0);
+    play();
+
+    playPauseBtn.addEventListener('click', () => {
+      if (isPlaying) {
+        pause();
+      } else {
+        if (currentIndex >= quarters.length - 1) {
+          showFrame(0);
+        }
+        play();
+      }
+    });
+
+    slider.addEventListener('input', () => {
+      pause();
+      showFrame(parseInt(slider.value));
+    });
+  </script>
+
+
+</body></html>
