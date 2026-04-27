@@ -231,10 +231,11 @@ if(D.u!==R){I(!D.u,"Failed to set the default implementation to <"+R+">: The def
   'use strict';
   function ready(fn) { if (document.readyState !== 'loading') { fn(); } else { document.addEventListener('DOMContentLoaded', fn); } }
   ready(function () {
-    var hamburger = document.getElementById('s9iPrd'); var sidebar = document.getElementById('yuynLe'); var overlay = document.querySelector('.BuY5Fd');
-    function openSidebar() { if (!sidebar) return; sidebar.removeAttribute('style'); if (hamburger) hamburger.setAttribute('aria-expanded', 'true'); if (overlay) { overlay.style.display = ''; overlay.style.opacity = '0.5'; } }
-    function closeSidebar() { if (!sidebar) return; sidebar.style.display = 'none'; if (hamburger) hamburger.setAttribute('aria-expanded', 'false'); if (overlay) { overlay.style.display = 'none'; overlay.style.opacity = ''; } }
-    if (hamburger) { hamburger.addEventListener('click', function () { var isOpen = sidebar && sidebar.style.display !== 'none' && sidebar.offsetParent !== null; isOpen ? closeSidebar() : openSidebar(); }); }
+    var hamburger = document.getElementById('s9iPrd'); var sidebar = document.getElementById('yuynLe'); var overlay = document.querySelector('.TxnWlb');
+    if (sidebar) sidebar.removeAttribute('style');
+    function openSidebar() { if (!sidebar) return; sidebar.removeAttribute('style'); sidebar.classList.add('jsnVQ'); if (hamburger) hamburger.setAttribute('aria-expanded', 'true'); if (overlay) overlay.classList.add('XPSexb'); }
+    function closeSidebar() { if (!sidebar) return; sidebar.classList.remove('jsnVQ'); sidebar.style.display = 'none'; if (hamburger) hamburger.setAttribute('aria-expanded', 'false'); if (overlay) overlay.classList.remove('XPSexb'); }
+    if (hamburger) { hamburger.addEventListener('click', function () { sidebar && sidebar.classList.contains('jsnVQ') ? closeSidebar() : openSidebar(); }); }
     if (overlay) { overlay.addEventListener('click', closeSidebar); }
     if (sidebar) { sidebar.querySelectorAll('.j10yRb[jsname="ix0Hvc"]').forEach(function (btn) { btn.addEventListener('click', function (e) { e.stopPropagation(); var parentLi = btn.closest('[jsname="ibnC6b"]'); var submenu = parentLi && parentLi.querySelector('[jsname="QXE97"]'); if (!submenu) return; submenu.style.display = (submenu.style.display === 'none') ? '' : 'none'; var link = parentLi.querySelector('[aria-expanded]'); if (link) link.setAttribute('aria-expanded', link.getAttribute('aria-expanded') === 'true' ? 'false' : 'true'); }); }); }
     var desktopNav = document.getElementById('WDxLfe');

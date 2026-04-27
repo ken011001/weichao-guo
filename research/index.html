@@ -282,26 +282,28 @@ interconnected dynamics and development.</span><span class="C9DxTc " style="colo
     /* -- 1. Hamburger button -> sidebar toggle -- */
     var hamburger = document.getElementById('s9iPrd');
     var sidebar   = document.getElementById('yuynLe');
-    var overlay   = document.querySelector('.BuY5Fd');
+    var overlay   = document.querySelector('.TxnWlb');
 
+    if (sidebar) sidebar.removeAttribute('style');
     function openSidebar() {
       if (!sidebar) return;
       sidebar.removeAttribute('style');
+      sidebar.classList.add('jsnVQ');
       if (hamburger) hamburger.setAttribute('aria-expanded', 'true');
-      if (overlay) { overlay.style.display = ''; overlay.style.opacity = '0.5'; }
+      if (overlay) overlay.classList.add('XPSexb');
     }
 
     function closeSidebar() {
       if (!sidebar) return;
+      sidebar.classList.remove('jsnVQ');
       sidebar.style.display = 'none';
       if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
-      if (overlay) { overlay.style.display = 'none'; overlay.style.opacity = ''; }
+      if (overlay) overlay.classList.remove('XPSexb');
     }
 
     if (hamburger) {
       hamburger.addEventListener('click', function () {
-        var isOpen = sidebar && sidebar.style.display !== 'none' && sidebar.offsetParent !== null;
-        isOpen ? closeSidebar() : openSidebar();
+        sidebar && sidebar.classList.contains('jsnVQ') ? closeSidebar() : openSidebar();
       });
     }
     if (overlay) { overlay.addEventListener('click', closeSidebar); }

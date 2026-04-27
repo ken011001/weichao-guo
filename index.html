@@ -249,30 +249,28 @@ Inequality.</span></p><br></div></div></div></div><div class="oKdM2c ZZyype"><di
     /* â”€â”€ 1. Hamburger button â†’ sidebar toggle â”€â”€ */
     var hamburger = document.getElementById('s9iPrd');
     var sidebar   = document.getElementById('yuynLe');
-    var overlay   = document.querySelector('.BuY5Fd');
+    var overlay   = document.querySelector('.TxnWlb');
 
+    if (sidebar) sidebar.removeAttribute('style');
     function openSidebar() {
       if (!sidebar) return;
-      sidebar.style.display = '';
-      sidebar.style.removeProperty('display');
-      // The sidebar starts hidden via style="display: none;"
-      // Remove it to let the element show (CSS has no default hide rule).
-      sidebar.removeAttribute('style'); // reveal
+      sidebar.removeAttribute('style');
+      sidebar.classList.add('jsnVQ');
       if (hamburger) hamburger.setAttribute('aria-expanded', 'true');
-      if (overlay) { overlay.style.display = ''; overlay.style.opacity = '0.5'; }
+      if (overlay) overlay.classList.add('XPSexb');
     }
 
     function closeSidebar() {
       if (!sidebar) return;
+      sidebar.classList.remove('jsnVQ');
       sidebar.style.display = 'none';
       if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
-      if (overlay) { overlay.style.display = 'none'; overlay.style.opacity = ''; }
+      if (overlay) overlay.classList.remove('XPSexb');
     }
 
     if (hamburger) {
       hamburger.addEventListener('click', function () {
-        var isOpen = sidebar && sidebar.style.display !== 'none' && sidebar.offsetParent !== null;
-        isOpen ? closeSidebar() : openSidebar();
+        sidebar && sidebar.classList.contains('jsnVQ') ? closeSidebar() : openSidebar();
       });
     }
     if (overlay) { overlay.addEventListener('click', closeSidebar); }
