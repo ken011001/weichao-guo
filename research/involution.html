@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>官方对内卷的表述 · 气泡链接图</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1923; color: #e8e8e8; font-family: 'PingFang SC','Microsoft YaHei',sans-serif; overflow: hidden; }
+
+#header {
+  position: fixed; top: 0; left: 0; right: 0; height: 52px;
+  background: rgba(15,25,35,0.95); border-bottom: 1px solid #1e3a4a;
+  display: flex; align-items: center; padding: 0 20px; gap: 16px; z-index: 100;
+}
+#header h1 { font-size: 15px; font-weight: 600; color: #fff; white-space: nowrap; }
+#header span { font-size: 12px; color: #7fa8c4; }
+
+#sidebar {
+  position: fixed; top: 52px; left: 0; width: 220px; bottom: 0;
+  background: rgba(15,25,35,0.92); border-right: 1px solid #1e3a4a;
+  padding: 14px 12px; overflow-y: auto; z-index: 90;
+}
+.section-title {
+  font-size: 10px; color: #5a7a94; text-transform: uppercase;
+  letter-spacing: 1px; margin: 14px 0 6px; padding-bottom: 4px;
+  border-bottom: 1px solid #1e3a4a;
+}
+.section-title:first-child { margin-top: 0; }
+
+.filter-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 9px; border-radius: 5px; cursor: pointer;
+  border: none; background: transparent; color: #aac;
+  font-size: 12px; width: 100%; text-align: left; transition: background .12s;
+  line-height: 1.4;
+}
+.filter-btn:hover { background: rgba(255,255,255,0.06); color: #dde; }
+.filter-btn.active { background: rgba(255,255,255,0.11); color: #fff; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+.view-btn {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 6px 9px; border-radius: 5px; cursor: pointer;
+  border: none; background: transparent; color: #aac;
+  font-size: 11px; width: 100%; text-align: left; transition: background .12s;
+  line-height: 1.5;
+}
+.view-btn:hover { background: rgba(255,255,255,0.06); color: #dde; }
+.view-btn.active { background: rgba(100,140,200,0.18); color: #fff; border-left: 2px solid #4a9ede; padding-left: 7px; }
+.view-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+
+#reset-btn {
+  margin-top: 12px; width: 100%; padding: 6px; border-radius: 5px;
+  background: rgba(192,57,43,0.18); border: 1px solid rgba(192,57,43,0.35);
+  color: #e8b0a8; font-size: 12px; cursor: pointer; transition: background .12s;
+}
+#reset-btn:hover { background: rgba(192,57,43,0.32); }
+
+#canvas {
+  position: fixed; top: 52px; left: 220px; right: 0; bottom: 0;
+  width: calc(100vw - 220px); height: calc(100vh - 52px); display: block;
+}
+
+#tooltip {
+  position: fixed; pointer-events: none;
+  max-width: 300px; background: rgba(8,16,26,0.97);
+  border: 1px solid #2a4a6a; border-radius: 8px;
+  padding: 10px 13px; font-size: 12px; line-height: 1.7;
+  z-index: 200; display: none; box-shadow: 0 4px 22px rgba(0,0,0,0.6);
+}
+#tooltip .tt-label { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+#tooltip .tt-verb  { font-size: 11px; color: #7fa8c4; margin-bottom: 5px; }
+#tooltip .tt-row   { color: #8ab0c8; }
+#tooltip .tt-row span { color: #e0e8f0; }
+#tooltip .tt-basis {
+  margin-top: 7px; padding-top: 6px; border-top: 1px solid #1e3050;
+  color: #6a90a8; font-size: 11px; line-height: 1.55;
+}
+
+#legend {
+  position: fixed; bottom: 36px; right: 16px;
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;
+  pointer-events: none; max-width: 300px;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px; color: #5a7a94;
+}
+.legend-circle { width: 9px; height: 9px; border-radius: 50%; }
+
+#info-bar {
+  position: fixed; bottom: 14px; right: 16px;
+  font-size: 11px; color: #2a4560; pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>官方对「内卷」的政策表述</h1>
+  <span id="subtitle">2024—2026 · 5份文件 · 108 个概念节点 · 原始视图</span>
+</div>
+
+<div id="sidebar">
+  <div class="section-title">视图模式</div>
+  <button class="view-btn active" data-view="raw">
+    <span class="view-icon">⬤</span>
+    <span>原始视图<br><span style="font-size:10px;color:#567">谓词→对象→文件→中心</span></span>
+  </button>
+  <button class="view-btn" data-view="connect">
+    <span class="view-icon">⇄</span>
+    <span>对象直连<br><span style="font-size:10px;color:#567">谓词→对象→中心</span></span>
+  </button>
+  <button class="view-btn" data-view="merge-obj">
+    <span class="view-icon">◎</span>
+    <span>按对象合并<br><span style="font-size:10px;color:#567">同名对象合并为单节点</span></span>
+  </button>
+  <button class="view-btn" data-view="merge-inf">
+    <span class="view-icon">▣</span>
+    <span>按推断关系合并<br><span style="font-size:10px;color:#567">同推断关系汇聚为组</span></span>
+  </button>
+  <button class="view-btn" data-view="merge-verb">
+    <span class="view-icon">▷</span>
+    <span>按谓词合并<br><span style="font-size:10px;color:#567">同谓词汇聚为组</span></span>
+  </button>
+
+  <div class="section-title">按推断关系筛选</div>
+  <button class="filter-btn active" data-inf="all"><div class="dot" style="background:#666"></div> 全部</button>
+  <button class="filter-btn" data-inf="治理对象"><div class="dot" style="background:#e74c3c"></div> 治理对象</button>
+  <button class="filter-btn" data-inf="手段"><div class="dot" style="background:#4a9ede"></div> 手段</button>
+  <button class="filter-btn" data-inf="目标"><div class="dot" style="background:#27ae60"></div> 目标</button>
+  <button class="filter-btn" data-inf="母题"><div class="dot" style="background:#f39c12"></div> 母题</button>
+  <button class="filter-btn" data-inf="原则"><div class="dot" style="background:#9b59b6"></div> 原则</button>
+  <button class="filter-btn" data-inf="结果"><div class="dot" style="background:#1abc9c"></div> 结果</button>
+  <button class="filter-btn" data-inf="制度来源"><div class="dot" style="background:#95a5a6"></div> 制度来源</button>
+
+  <div class="section-title">按文件筛选</div>
+  <button class="filter-btn active" data-doc="all"><div class="dot" style="background:#666"></div> 全部</button>
+  <button class="filter-btn" data-doc="中共中央政治局会议 审议《整治形式主义为基层减负若干规定》"><div class="dot" style="background:#8a9ab0"></div> 政治局会议·2024.07</button>
+  <button class="filter-btn" data-doc="十四届全国人大四次会议 政府工作报告"><div class="dot" style="background:#8a9ab0"></div> 政府工作报告·2025.03</button>
+  <button class="filter-btn" data-doc="二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议"><div class="dot" style="background:#8a9ab0"></div> 四中全会建议·2025.10</button>
+  <button class="filter-btn" data-doc="中央经济工作会议上习近平的重要讲话"><div class="dot" style="background:#8a9ab0"></div> 中央经济工作会议·2025.12</button>
+  <button class="filter-btn" data-doc="十五五规划"><div class="dot" style="background:#8a9ab0"></div> 十五五规划·2026.03</button>
+
+  <button id="reset-btn">↺ 重置</button>
+</div>
+
+<svg id="canvas"></svg>
+<div id="legend">
+  <div class="legend-item"><div class="legend-circle" style="background:#7ea8c0;border:1px solid #9ac"></div> 谓词</div>
+  <div class="legend-item"><div class="legend-circle" style="background:#4a9ede"></div> 手段</div>
+  <div class="legend-item"><div class="legend-circle" style="background:#e74c3c"></div> 治理对象</div>
+  <div class="legend-item"><div class="legend-circle" style="background:#27ae60"></div> 目标</div>
+  <div class="legend-item"><div class="legend-circle" style="background:#f39c12"></div> 母题</div>
+  <div class="legend-item"><div class="legend-circle" style="background:#9b59b6"></div> 原则</div>
+  <div class="legend-item"><div class="legend-circle" style="background:#1abc9c"></div> 结果</div>
+  <div class="legend-item"><div class="legend-circle" style="background:#6b7280"></div> 文件</div>
+</div>
+<div id="tooltip"></div>
+<div id="info-bar">拖动平移 · 滚轮缩放 · 悬停查看详情</div>
+
+<script>
+const RAW_NODES = [{"id": "__center__", "label": "内卷式\n竞争", "type": "center", "color": "#c0392b", "r": 46, "doc": "", "basis": "", "verb": "", "inf": ""}, {"id": "__doc__中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "label": "政治局会议\n20240730", "type": "doc", "color": "#6b7280", "r": 30, "doc": "中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "basis": "", "verb": "", "inf": ""}, {"id": "__doc__十四届全国人大四次会议 政府工作报告", "label": "政府工作报告\n20250305", "type": "doc", "color": "#6b7280", "r": 30, "doc": "十四届全国人大四次会议 政府工作报告", "basis": "", "verb": "", "inf": ""}, {"id": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "label": "四中全会\n20251023", "type": "doc", "color": "#6b7280", "r": 30, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "basis": "", "verb": "", "inf": ""}, {"id": "__doc__中央经济工作会议上习近平的重要讲话", "label": "中央经济\n工作会议\n20251211", "type": "doc", "color": "#6b7280", "r": 30, "doc": "中央经济工作会议上习近平的重要讲话", "basis": "", "verb": "", "inf": ""}, {"id": "__doc__十五五规划", "label": "十五五规划\n20260313", "type": "doc", "color": "#6b7280", "r": 30, "doc": "十五五规划", "basis": "", "verb": "", "inf": ""}, {"id": "__c__中共中央政治_行业自律", "label": "行业自律", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "inf": "手段", "rel": "同句", "verb": "强化", "basis": "要强化行业自律，防止\"内卷式\"恶性竞争。", "kw": "强化行业自律"}, {"id": "__c__中共中央政治_新兴产业和未来产业", "label": "新兴产业和未来产业", "type": "concept", "color": "#f39c12", "r": 10, "doc": "中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "inf": "母题", "rel": "母题", "verb": "培育壮大", "basis": "要培育壮大新兴产业和未来产业。", "kw": "培育壮大新兴产业和未来产业"}, {"id": "__c__中共中央政治_高水平科技自立自强", "label": "高水平科技自立自强", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "inf": "手段", "rel": "同段", "verb": "推进", "basis": "要大力推进高水平科技自立自强，加强关键核心技术攻关，推动传统产业转型升级。", "kw": "高水平科技自立自强"}, {"id": "__c__中共中央政治_关键核心技术", "label": "关键核心技术", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "inf": "手段", "rel": "同段", "verb": "攻关", "basis": "要大力推进高水平科技自立自强，加强关键核心技术攻关，推动传统产业转型升级。", "kw": "关键核心技术攻关"}, {"id": "__c__中共中央政治_传统产业转型升级", "label": "传统产业转型升级", "type": "concept", "color": "#27ae60", "r": 10, "doc": "中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "inf": "目标", "rel": "同段", "verb": "推动", "basis": "要大力推进高水平科技自立自强，加强关键核心技术攻关，推动传统产业转型升级。", "kw": "传统产业转型升级"}, {"id": "__c__中共中央政治_瞪羚企业", "label": "瞪羚企业", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "inf": "手段", "rel": "同段", "verb": "支持发展", "basis": "要有力有效支持发展瞪羚企业、独角兽企业。", "kw": "支持发展瞪羚企业"}, {"id": "__c__中共中央政治_独角兽企业", "label": "独角兽企业", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "inf": "手段", "rel": "同段", "verb": "支持发展", "basis": "要有力有效支持发展瞪羚企业、独角兽企业。", "kw": "支持发展独角兽企业"}, {"id": "__c__中共中央政治_市场优胜劣汰机制", "label": "市场优胜劣汰机制", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "inf": "手段", "rel": "同段", "verb": "强化", "basis": "强化市场优胜劣汰机制，畅通落后低效产能退出渠道。", "kw": "市场优胜劣汰机制"}, {"id": "__c__中共中央政治_落后低效产能退出渠道", "label": "落后低效产能退出渠道", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "inf": "手段", "rel": "同段", "verb": "畅通", "basis": "强化市场优胜劣汰机制，畅通落后低效产能退出渠道。", "kw": "落后低效产能退出渠道"}, {"id": "__c__中共中央政治_落后低效产能", "label": "落后低效产能", "type": "concept", "color": "#e74c3c", "r": 10, "doc": "中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "inf": "治理对象", "rel": "同段", "verb": "", "basis": "强化市场优胜劣汰机制，畅通落后低效产能退出渠道。", "kw": "落后低效产能"}, {"id": "__c__十四届全国人_全国统一大市场建设指引", "label": "全国统一大市场建设指引", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同句", "verb": "实施", "basis": "实施全国统一大市场建设指引，出台新版市场准入负面清单，系统整治招标投标、招商引资领域突出问题，推进重点行业产能治理，综合整治\"内卷式\"竞争成效显现。", "kw": "全国统一大市场建设指引"}, {"id": "__c__十四届全国人_新版市场准入负面清单", "label": "新版市场准入负面清单", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同句", "verb": "出台", "basis": "实施全国统一大市场建设指引，出台新版市场准入负面清单，系统整治招标投标、招商引资领域突出问题，推进重点行业产能治理，综合整治\"内卷式\"竞争成效显现。", "kw": "新版市场准入负面清单"}, {"id": "__c__十四届全国人_招标投标领域突出问题", "label": "招标投标领域突出问题", "type": "concept", "color": "#e74c3c", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "治理对象", "rel": "同句", "verb": "整治", "basis": "实施全国统一大市场建设指引，出台新版市场准入负面清单，系统整治招标投标、招商引资领域突出问题，推进重点行业产能治理，综合整治\"内卷式\"竞争成效显现。", "kw": "招标投标领域突出问题"}, {"id": "__c__十四届全国人_招商引资领域突出问题", "label": "招商引资领域突出问题", "type": "concept", "color": "#e74c3c", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "治理对象", "rel": "同句", "verb": "整治", "basis": "实施全国统一大市场建设指引，出台新版市场准入负面清单，系统整治招标投标、招商引资领域突出问题，推进重点行业产能治理，综合整治\"内卷式\"竞争成效显现。", "kw": "招商引资领域突出问题"}, {"id": "__c__十四届全国人_重点行业产能治理", "label": "重点行业产能治理", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同句", "verb": "推进", "basis": "实施全国统一大市场建设指引，出台新版市场准入负面清单，系统整治招标投标、招商引资领域突出问题，推进重点行业产能治理，综合整治\"内卷式\"竞争成效显现。", "kw": "重点行业产能治理"}, {"id": "__c__十四届全国人_治理成效", "label": "治理成效", "type": "concept", "color": "#1abc9c", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "结果", "rel": "同句", "verb": "显现", "basis": "实施全国统一大市场建设指引，出台新版市场准入负面清单，系统整治招标投标、招商引资领域突出问题，推进重点行业产能治理，综合整治\"内卷式\"竞争成效显现。", "kw": "综合整治\"内卷式\"竞争成效显现"}, {"id": "__c__十四届全国人_改革开放", "label": "改革开放", "type": "concept", "color": "#f39c12", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "母题", "rel": "母题", "verb": "深化", "basis": "三是进一步深化改革开放，畅通国民经济循环。", "kw": "进一步深化改革开放，畅通国民经济循环"}, {"id": "__c__十四届全国人_国民经济循环", "label": "国民经济循环", "type": "concept", "color": "#27ae60", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "目标", "rel": "母题", "verb": "畅通", "basis": "三是进一步深化改革开放，畅通国民经济循环。", "kw": "畅通国民经济循环"}, {"id": "__c__十四届全国人_2025年工作回顾", "label": "2025年工作回顾", "type": "concept", "color": "#f39c12", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "母题", "rel": "母题的母题", "verb": "", "basis": "一、2025年工作回顾", "kw": "2025年工作回顾"}, {"id": "__c__十四届全国人_二十届三中全会改革部署", "label": "二十届三中全会改革部署", "type": "concept", "color": "#95a5a6", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "制度来源", "rel": "同段", "verb": "落实", "basis": "扎实落实党的二十届三中全会改革部署。", "kw": "党的二十届三中全会改革部署"}, {"id": "__c__十四届全国人_要素市场化配置综合改革试点", "label": "要素市场化配置综合改革试点", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同段", "verb": "开展", "basis": "开展要素市场化配置综合改革试点。", "kw": "要素市场化配置综合改革试点"}, {"id": "__c__十四届全国人_国有企业改革", "label": "国有企业改革", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同段", "verb": "深化提升", "basis": "国有企业改革深化提升行动取得积极成效，出台进一步促进民间投资发展的措施。", "kw": "国有企业改革深化提升行动"}, {"id": "__c__十四届全国人_民间投资发展", "label": "民间投资发展", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同段", "verb": "促进", "basis": "国有企业改革深化提升行动取得积极成效，出台进一步促进民间投资发展的措施。", "kw": "促进民间投资发展"}, {"id": "__c__十四届全国人_拖欠企业账款", "label": "拖欠企业账款", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同段", "verb": "清理", "basis": "加快加力清理拖欠企业账款。", "kw": "清理拖欠企业账款"}, {"id": "__c__十四届全国人_反垄断", "label": "反垄断", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同句", "verb": "加强", "basis": "加强反垄断、反不正当竞争，强化公平竞争审查刚性约束，综合运用产能调控、标准引领、价格执法、质量监管等手段，深入整治\"内卷式\"竞争，营造良好市场生态。", "kw": "加强反垄断"}, {"id": "__c__十四届全国人_反不正当竞争", "label": "反不正当竞争", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同句", "verb": "加强", "basis": "加强反垄断、反不正当竞争，强化公平竞争审查刚性约束，综合运用产能调控、标准引领、价格执法、质量监管等手段，深入整治\"内卷式\"竞争，营造良好市场生态。", "kw": "加强反不正当竞争"}, {"id": "__c__十四届全国人_公平竞争审查刚性约束", "label": "公平竞争审查刚性约束", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同句", "verb": "强化", "basis": "加强反垄断、反不正当竞争，强化公平竞争审查刚性约束，综合运用产能调控、标准引领、价格执法、质量监管等手段，深入整治\"内卷式\"竞争，营造良好市场生态。", "kw": "公平竞争审查刚性约束"}, {"id": "__c__十四届全国人_产能调控", "label": "产能调控", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同句", "verb": "运用", "basis": "加强反垄断、反不正当竞争，强化公平竞争审查刚性约束，综合运用产能调控、标准引领、价格执法、质量监管等手段，深入整治\"内卷式\"竞争，营造良好市场生态。", "kw": "产能调控"}, {"id": "__c__十四届全国人_标准引领", "label": "标准引领", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同句", "verb": "运用", "basis": "加强反垄断、反不正当竞争，强化公平竞争审查刚性约束，综合运用产能调控、标准引领、价格执法、质量监管等手段，深入整治\"内卷式\"竞争，营造良好市场生态。", "kw": "标准引领"}, {"id": "__c__十四届全国人_价格执法", "label": "价格执法", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同句", "verb": "运用", "basis": "加强反垄断、反不正当竞争，强化公平竞争审查刚性约束，综合运用产能调控、标准引领、价格执法、质量监管等手段，深入整治\"内卷式\"竞争，营造良好市场生态。", "kw": "价格执法"}, {"id": "__c__十四届全国人_质量监管", "label": "质量监管", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同句", "verb": "运用", "basis": "加强反垄断、反不正当竞争，强化公平竞争审查刚性约束，综合运用产能调控、标准引领、价格执法、质量监管等手段，深入整治\"内卷式\"竞争，营造良好市场生态。", "kw": "质量监管"}, {"id": "__c__十四届全国人_良好市场生态", "label": "良好市场生态", "type": "concept", "color": "#27ae60", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "目标", "rel": "同句", "verb": "营造", "basis": "加强反垄断、反不正当竞争，强化公平竞争审查刚性约束，综合运用产能调控、标准引领、价格执法、质量监管等手段，深入整治\"内卷式\"竞争，营造良好市场生态。", "kw": "营造良好市场生态"}, {"id": "__c__十四届全国人_重点领域改革", "label": "重点领域改革", "type": "concept", "color": "#f39c12", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "母题", "rel": "母题", "verb": "持续深化", "basis": "（四）持续深化重点领域改革。", "kw": "持续深化重点领域改革"}, {"id": "__c__十四届全国人_高水平社会主义市场经济体制", "label": "高水平社会主义市场经济体制", "type": "concept", "color": "#27ae60", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "目标", "rel": "母题总述", "verb": "构建", "basis": "围绕构建高水平社会主义市场经济体制，强化改革攻坚，深入破除体制机制障碍，增强高质量发展动力活力。", "kw": "构建高水平社会主义市场经济体制"}, {"id": "__c__十四届全国人_改革攻坚", "label": "改革攻坚", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "母题总述", "verb": "强化", "basis": "围绕构建高水平社会主义市场经济体制，强化改革攻坚，深入破除体制机制障碍，增强高质量发展动力活力。", "kw": "强化改革攻坚"}, {"id": "__c__十四届全国人_体制机制障碍", "label": "体制机制障碍", "type": "concept", "color": "#e74c3c", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "治理对象", "rel": "母题总述", "verb": "破除", "basis": "围绕构建高水平社会主义市场经济体制，强化改革攻坚，深入破除体制机制障碍，增强高质量发展动力活力。", "kw": "深入破除体制机制障碍"}, {"id": "__c__十四届全国人_高质量发展动力活力", "label": "高质量发展动力活力", "type": "concept", "color": "#27ae60", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "目标", "rel": "母题总述", "verb": "增强", "basis": "围绕构建高水平社会主义市场经济体制，强化改革攻坚，深入破除体制机制障碍，增强高质量发展动力活力。", "kw": "高质量发展动力活力"}, {"id": "__c__十四届全国人_2026年政府工作任务", "label": "2026年政府工作任务", "type": "concept", "color": "#f39c12", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "母题", "rel": "母题的母题", "verb": "", "basis": "四、2026年政府工作任务", "kw": "四、2026年政府工作任务"}, {"id": "__c__十四届全国人_全国统一大市场建设", "label": "全国统一大市场建设", "type": "concept", "color": "#27ae60", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "目标", "rel": "同段", "verb": "纵深推进", "basis": "纵深推进全国统一大市场建设。", "kw": "纵深推进全国统一大市场建设"}, {"id": "__c__十四届全国人_全国统一大市场建设条例", "label": "全国统一大市场建设条例", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同段", "verb": "制定", "basis": "制定全国统一大市场建设条例。", "kw": "全国统一大市场建设条例"}, {"id": "__c__十四届全国人_统计财税考核制度", "label": "统计财税考核制度", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同段", "verb": "完善", "basis": "完善统计、财税、考核等制度，规范地方政府经济促进行为，出台地方政府招商引资鼓励和禁止事项清单，规范税收优惠、财政补贴政策。", "kw": "统计、财税、考核等制度"}, {"id": "__c__十四届全国人_地方政府经济促进行为", "label": "地方政府经济促进行为", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同段", "verb": "规范", "basis": "完善统计、财税、考核等制度，规范地方政府经济促进行为，出台地方政府招商引资鼓励和禁止事项清单，规范税收优惠、财政补贴政策。", "kw": "规范地方政府经济促进行为"}, {"id": "__c__十四届全国人_招商引资鼓励和禁止事项清单", "label": "招商引资鼓励和禁止事项清单", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同段", "verb": "出台", "basis": "完善统计、财税、考核等制度，规范地方政府经济促进行为，出台地方政府招商引资鼓励和禁止事项清单，规范税收优惠、财政补贴政策。", "kw": "地方政府招商引资鼓励和禁止事项清单"}, {"id": "__c__十四届全国人_税收优惠财政补贴政策", "label": "税收优惠财政补贴政策", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同段", "verb": "规范", "basis": "完善统计、财税、考核等制度，规范地方政府经济促进行为，出台地方政府招商引资鼓励和禁止事项清单，规范税收优惠、财政补贴政策。", "kw": "税收优惠、财政补贴政策"}, {"id": "__c__十四届全国人_招标投标体制机制改革", "label": "招标投标体制机制改革", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同段", "verb": "深化", "basis": "深化招标投标体制机制改革。", "kw": "招标投标体制机制改革"}, {"id": "__c__十四届全国人_试点范围", "label": "试点范围", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同段", "verb": "纳入", "basis": "深化要素市场化配置综合改革试点，将更多符合条件的地区纳入试点范围。", "kw": "将更多符合条件的地区纳入试点范围"}, {"id": "__c__十四届全国人_综合交通运输体系改革", "label": "综合交通运输体系改革", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同段", "verb": "深化", "basis": "深化综合交通运输体系改革，降低全社会物流成本。", "kw": "综合交通运输体系改革"}, {"id": "__c__十四届全国人_全社会物流成本", "label": "全社会物流成本", "type": "concept", "color": "#27ae60", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "目标", "rel": "同段", "verb": "降低", "basis": "深化综合交通运输体系改革，降低全社会物流成本。", "kw": "降低全社会物流成本"}, {"id": "__c__十四届全国人_公用事业价格改革", "label": "公用事业价格改革", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十四届全国人大四次会议 政府工作报告", "inf": "手段", "rel": "同段", "verb": "推进", "basis": "稳步推进公用事业和公共服务价格改革。", "kw": "公用事业和公共服务价格改革"}, {"id": "__c__二十届四中全_全国统一大市场卡点堵点", "label": "全国统一大市场卡点堵点", "type": "concept", "color": "#f39c12", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "母题", "rel": "母题", "verb": "破除", "basis": "(17）坚决破除阻碍全国统一大市场建设卡点堵点。", "kw": "破除阻碍全国统一大市场建设卡点堵点"}, {"id": "__c__二十届四中全_强大国内市场", "label": "强大国内市场", "type": "concept", "color": "#f39c12", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "母题", "rel": "母题的母题", "verb": "建设", "basis": "五、建设强大国内市场，加快构建新发展格局", "kw": "建设强大国内市场，加快构建新发展格局"}, {"id": "__c__二十届四中全_市场基础制度规则", "label": "市场基础制度规则", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "统一", "basis": "统一市场基础制度规则，完善产权保护、市场准入、信息披露、社会信用、兼并重组、市场退出等制度，消除要素获取、资质认定、招标投标、政府采购等方面壁垒，规范地方政府经济促进行为，破除地方保护和市场分割。", "kw": "统一市场基础制度规则"}, {"id": "__c__二十届四中全_产权保护制度", "label": "产权保护制度", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "完善", "basis": "统一市场基础制度规则，完善产权保护、市场准入、信息披露、社会信用、兼并重组、市场退出等制度，消除要素获取、资质认定、招标投标、政府采购等方面壁垒，规范地方政府经济促进行为，破除地方保护和市场分割。", "kw": "产权保护制度"}, {"id": "__c__二十届四中全_市场准入制度", "label": "市场准入制度", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "完善", "basis": "统一市场基础制度规则，完善产权保护、市场准入、信息披露、社会信用、兼并重组、市场退出等制度，消除要素获取、资质认定、招标投标、政府采购等方面壁垒，规范地方政府经济促进行为，破除地方保护和市场分割。", "kw": "市场准入制度"}, {"id": "__c__二十届四中全_信息披露制度", "label": "信息披露制度", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "完善", "basis": "统一市场基础制度规则，完善产权保护、市场准入、信息披露、社会信用、兼并重组、市场退出等制度，消除要素获取、资质认定、招标投标、政府采购等方面壁垒，规范地方政府经济促进行为，破除地方保护和市场分割。", "kw": "信息披露制度"}, {"id": "__c__二十届四中全_社会信用制度", "label": "社会信用制度", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "完善", "basis": "统一市场基础制度规则，完善产权保护、市场准入、信息披露、社会信用、兼并重组、市场退出等制度，消除要素获取、资质认定、招标投标、政府采购等方面壁垒，规范地方政府经济促进行为，破除地方保护和市场分割。", "kw": "社会信用制度"}, {"id": "__c__二十届四中全_兼并重组制度", "label": "兼并重组制度", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "完善", "basis": "统一市场基础制度规则，完善产权保护、市场准入、信息披露、社会信用、兼并重组、市场退出等制度，消除要素获取、资质认定、招标投标、政府采购等方面壁垒，规范地方政府经济促进行为，破除地方保护和市场分割。", "kw": "兼并重组制度"}, {"id": "__c__二十届四中全_市场退出制度", "label": "市场退出制度", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "完善", "basis": "统一市场基础制度规则，完善产权保护、市场准入、信息披露、社会信用、兼并重组、市场退出等制度，消除要素获取、资质认定、招标投标、政府采购等方面壁垒，规范地方政府经济促进行为，破除地方保护和市场分割。", "kw": "市场退出制度"}, {"id": "__c__二十届四中全_要素获取壁垒", "label": "要素获取壁垒", "type": "concept", "color": "#e74c3c", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "治理对象", "rel": "同段", "verb": "消除", "basis": "统一市场基础制度规则，完善产权保护、市场准入、信息披露、社会信用、兼并重组、市场退出等制度，消除要素获取、资质认定、招标投标、政府采购等方面壁垒，规范地方政府经济促进行为，破除地方保护和市场分割。", "kw": "要素获取壁垒"}, {"id": "__c__二十届四中全_资质认定壁垒", "label": "资质认定壁垒", "type": "concept", "color": "#e74c3c", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "治理对象", "rel": "同段", "verb": "消除", "basis": "统一市场基础制度规则，完善产权保护、市场准入、信息披露、社会信用、兼并重组、市场退出等制度，消除要素获取、资质认定、招标投标、政府采购等方面壁垒，规范地方政府经济促进行为，破除地方保护和市场分割。", "kw": "资质认定壁垒"}, {"id": "__c__二十届四中全_招标投标壁垒", "label": "招标投标壁垒", "type": "concept", "color": "#e74c3c", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "治理对象", "rel": "同段", "verb": "消除", "basis": "统一市场基础制度规则，完善产权保护、市场准入、信息披露、社会信用、兼并重组、市场退出等制度，消除要素获取、资质认定、招标投标、政府采购等方面壁垒，规范地方政府经济促进行为，破除地方保护和市场分割。", "kw": "招标投标壁垒"}, {"id": "__c__二十届四中全_政府采购壁垒", "label": "政府采购壁垒", "type": "concept", "color": "#e74c3c", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "治理对象", "rel": "同段", "verb": "消除", "basis": "统一市场基础制度规则，完善产权保护、市场准入、信息披露、社会信用、兼并重组、市场退出等制度，消除要素获取、资质认定、招标投标、政府采购等方面壁垒，规范地方政府经济促进行为，破除地方保护和市场分割。", "kw": "政府采购壁垒"}, {"id": "__c__二十届四中全_地方政府经济促进行为", "label": "地方政府经济促进行为", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "规范", "basis": "统一市场基础制度规则，完善产权保护、市场准入、信息披露、社会信用、兼并重组、市场退出等制度，消除要素获取、资质认定、招标投标、政府采购等方面壁垒，规范地方政府经济促进行为，破除地方保护和市场分割。", "kw": "规范地方政府经济促进行为"}, {"id": "__c__二十届四中全_地方保护", "label": "地方保护", "type": "concept", "color": "#e74c3c", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "治理对象", "rel": "同段", "verb": "破除", "basis": "统一市场基础制度规则，完善产权保护、市场准入、信息披露、社会信用、兼并重组、市场退出等制度，消除要素获取、资质认定、招标投标、政府采购等方面壁垒，规范地方政府经济促进行为，破除地方保护和市场分割。", "kw": "地方保护"}, {"id": "__c__二十届四中全_市场分割", "label": "市场分割", "type": "concept", "color": "#e74c3c", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "治理对象", "rel": "同段", "verb": "破除", "basis": "统一市场基础制度规则，完善产权保护、市场准入、信息披露、社会信用、兼并重组、市场退出等制度，消除要素获取、资质认定、招标投标、政府采购等方面壁垒，规范地方政府经济促进行为，破除地方保护和市场分割。", "kw": "市场分割"}, {"id": "__c__二十届四中全_市场监管执法", "label": "市场监管执法", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "统一", "basis": "统一市场监管执法，加强质量监管，完善行政裁量权基准制度，强化反垄断和反不正当竞争执法司法，形成优质优价、良性竞争的市场秩序。", "kw": "统一市场监管执法"}, {"id": "__c__二十届四中全_质量监管", "label": "质量监管", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "加强", "basis": "统一市场监管执法，加强质量监管，完善行政裁量权基准制度，强化反垄断和反不正当竞争执法司法，形成优质优价、良性竞争的市场秩序。", "kw": "加强质量监管"}, {"id": "__c__二十届四中全_行政裁量权基准制度", "label": "行政裁量权基准制度", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "完善", "basis": "统一市场监管执法，加强质量监管，完善行政裁量权基准制度，强化反垄断和反不正当竞争执法司法，形成优质优价、良性竞争的市场秩序。", "kw": "行政裁量权基准制度"}, {"id": "__c__二十届四中全_反垄断执法司法", "label": "反垄断执法司法", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "强化", "basis": "统一市场监管执法，加强质量监管，完善行政裁量权基准制度，强化反垄断和反不正当竞争执法司法，形成优质优价、良性竞争的市场秩序。", "kw": "反垄断执法司法"}, {"id": "__c__二十届四中全_反不正当竞争执法司法", "label": "反不正当竞争执法司法", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "强化", "basis": "统一市场监管执法，加强质量监管，完善行政裁量权基准制度，强化反垄断和反不正当竞争执法司法，形成优质优价、良性竞争的市场秩序。", "kw": "反不正当竞争执法司法"}, {"id": "__c__二十届四中全_优质优价良性竞争市场秩序", "label": "优质优价良性竞争市场秩序", "type": "concept", "color": "#27ae60", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "目标", "rel": "同段", "verb": "形成", "basis": "统一市场监管执法，加强质量监管，完善行政裁量权基准制度，强化反垄断和反不正当竞争执法司法，形成优质优价、良性竞争的市场秩序。", "kw": "优质优价、良性竞争的市场秩序"}, {"id": "__c__二十届四中全_流通规则和标准", "label": "流通规则和标准", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "健全", "basis": "健全一体衔接的流通规则和标准，高标准联通市场设施，降低全社会物流成本。", "kw": "一体衔接的流通规则和标准"}, {"id": "__c__二十届四中全_市场设施", "label": "市场设施", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "联通", "basis": "健全一体衔接的流通规则和标准，高标准联通市场设施，降低全社会物流成本。", "kw": "高标准联通市场设施"}, {"id": "__c__二十届四中全_全社会物流成本", "label": "全社会物流成本", "type": "concept", "color": "#27ae60", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "目标", "rel": "同段", "verb": "降低", "basis": "健全一体衔接的流通规则和标准，高标准联通市场设施，降低全社会物流成本。", "kw": "降低全社会物流成本"}, {"id": "__c__二十届四中全_统计制度", "label": "统计制度", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "完善", "basis": "完善有利于统一大市场建设的统计、财税、考核制度，优化企业总部和分支机构、生产地和消费地利益分享。", "kw": "有利于统一大市场建设的统计制度"}, {"id": "__c__二十届四中全_财税制度", "label": "财税制度", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "完善", "basis": "完善有利于统一大市场建设的统计、财税、考核制度，优化企业总部和分支机构、生产地和消费地利益分享。", "kw": "有利于统一大市场建设的财税制度"}, {"id": "__c__二十届四中全_考核制度", "label": "考核制度", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "完善", "basis": "完善有利于统一大市场建设的统计、财税、考核制度，优化企业总部和分支机构、生产地和消费地利益分享。", "kw": "有利于统一大市场建设的考核制度"}, {"id": "__c__二十届四中全_利益分享机制", "label": "利益分享机制", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "inf": "手段", "rel": "同段", "verb": "优化", "basis": "完善有利于统一大市场建设的统计、财税、考核制度，优化企业总部和分支机构、生产地和消费地利益分享。", "kw": "企业总部和分支机构、生产地和消费地利益分享"}, {"id": "__c__中央经济工作_地方政府行为", "label": "地方政府行为", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "手段", "rel": "同句", "verb": "规范", "basis": "综合整治\"内卷式\"竞争，规范地方政府和企业行为。", "kw": "规范地方政府行为"}, {"id": "__c__中央经济工作_企业行为", "label": "企业行为", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "手段", "rel": "同句", "verb": "规范", "basis": "综合整治\"内卷式\"竞争，规范地方政府和企业行为。", "kw": "规范企业行为"}, {"id": "__c__中央经济工作_新质生产力发展", "label": "新质生产力发展", "type": "concept", "color": "#f39c12", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "母题", "rel": "母题", "verb": "科技创新引领", "basis": "二是以科技创新引领新质生产力发展，建设现代化产业体系。", "kw": "以科技创新引领新质生产力发展，建设现代化产业体系"}, {"id": "__c__中央经济工作_有效市场和有为政府", "label": "有效市场和有为政府", "type": "concept", "color": "#9b59b6", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "原则", "rel": "母题总述", "verb": "统筹", "basis": "必须统筹好有效市场和有为政府的关系，形成既\"放得活\"又\"管得住\"的经济秩序。", "kw": "统筹好有效市场和有为政府的关系"}, {"id": "__c__中央经济工作_经济秩序", "label": "经济秩序", "type": "concept", "color": "#27ae60", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "目标", "rel": "母题总述", "verb": "放得活管得住", "basis": "必须统筹好有效市场和有为政府的关系，形成既\"放得活\"又\"管得住\"的经济秩序。", "kw": "既\"放得活\"又\"管得住\"的经济秩序"}, {"id": "__c__中央经济工作_国民经济循环", "label": "国民经济循环", "type": "concept", "color": "#27ae60", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "目标", "rel": "母题总述", "verb": "畅通", "basis": "必须统筹好总供给和总需求的关系，畅通国民经济循环。", "kw": "畅通国民经济循环"}, {"id": "__c__中央经济工作_新质生产力", "label": "新质生产力", "type": "concept", "color": "#27ae60", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "目标", "rel": "母题总述", "verb": "发展", "basis": "必须统筹好培育新动能和更新旧动能的关系，因地制宜发展新质生产力。", "kw": "因地制宜发展新质生产力"}, {"id": "__c__中央经济工作_资源配置效率", "label": "资源配置效率", "type": "concept", "color": "#27ae60", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "目标", "rel": "母题总述", "verb": "提高", "basis": "必须统筹好做优增量和盘活存量的关系，全面提高资源配置效率。", "kw": "全面提高资源配置效率"}, {"id": "__c__中央经济工作_基础研究", "label": "基础研究", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "手段", "rel": "同段", "verb": "加强", "basis": "加强基础研究和关键核心技术攻关，超前布局重大科技项目，开展新技术新产品新场景大规模应用示范行动。", "kw": "加强基础研究"}, {"id": "__c__中央经济工作_关键核心技术", "label": "关键核心技术", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "手段", "rel": "同段", "verb": "攻关", "basis": "加强基础研究和关键核心技术攻关，超前布局重大科技项目，开展新技术新产品新场景大规模应用示范行动。", "kw": "关键核心技术攻关"}, {"id": "__c__中央经济工作_重大科技项目", "label": "重大科技项目", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "手段", "rel": "同段", "verb": "布局", "basis": "加强基础研究和关键核心技术攻关，超前布局重大科技项目，开展新技术新产品新场景大规模应用示范行动。", "kw": "超前布局重大科技项目"}, {"id": "__c__中央经济工作_新技术新产品新场景应用示范", "label": "新技术新产品新场景应用示范", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "手段", "rel": "同段", "verb": "开展", "basis": "加强基础研究和关键核心技术攻关，超前布局重大科技项目，开展新技术新产品新场景大规模应用示范行动。", "kw": "新技术新产品新场景大规模应用示范行动"}, {"id": "__c__中央经济工作_\"人工智能+\"行动", "label": "\"人工智能+\"行动", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "手段", "rel": "同段", "verb": "开展", "basis": "开展\"人工智能+\"行动，培育未来产业。", "kw": "\"人工智能+\"行动"}, {"id": "__c__中央经济工作_未来产业", "label": "未来产业", "type": "concept", "color": "#27ae60", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "目标", "rel": "同段", "verb": "培育", "basis": "开展\"人工智能+\"行动，培育未来产业。", "kw": "培育未来产业"}, {"id": "__c__中央经济工作_国家战略科技力量", "label": "国家战略科技力量", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "手段", "rel": "同段", "verb": "加强", "basis": "加强国家战略科技力量建设。", "kw": "国家战略科技力量建设"}, {"id": "__c__中央经济工作_多层次金融服务体系", "label": "多层次金融服务体系", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "手段", "rel": "同段", "verb": "健全", "basis": "健全多层次金融服务体系，壮大耐心资本，更大力度吸引社会资本参与创业投资，梯度培育创新型企业。", "kw": "多层次金融服务体系"}, {"id": "__c__中央经济工作_耐心资本", "label": "耐心资本", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "手段", "rel": "同段", "verb": "壮大", "basis": "健全多层次金融服务体系，壮大耐心资本，更大力度吸引社会资本参与创业投资，梯度培育创新型企业。", "kw": "壮大耐心资本"}, {"id": "__c__中央经济工作_社会资本参与创业投资", "label": "社会资本参与创业投资", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "手段", "rel": "同段", "verb": "吸引", "basis": "健全多层次金融服务体系，壮大耐心资本，更大力度吸引社会资本参与创业投资，梯度培育创新型企业。", "kw": "社会资本参与创业投资"}, {"id": "__c__中央经济工作_创新型企业", "label": "创新型企业", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "手段", "rel": "同段", "verb": "梯度培育", "basis": "健全多层次金融服务体系，壮大耐心资本，更大力度吸引社会资本参与创业投资，梯度培育创新型企业。", "kw": "梯度培育创新型企业"}, {"id": "__c__中央经济工作_数字技术", "label": "数字技术", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "手段", "rel": "同段", "verb": "运用", "basis": "积极运用数字技术、绿色技术改造提升传统产业。", "kw": "运用数字技术改造提升传统产业"}, {"id": "__c__中央经济工作_绿色技术", "label": "绿色技术", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "手段", "rel": "同段", "verb": "运用", "basis": "积极运用数字技术、绿色技术改造提升传统产业。", "kw": "运用绿色技术改造提升传统产业"}, {"id": "__c__中央经济工作_传统产业", "label": "传统产业", "type": "concept", "color": "#27ae60", "r": 10, "doc": "中央经济工作会议上习近平的重要讲话", "inf": "目标", "rel": "同段", "verb": "改造提升", "basis": "积极运用数字技术、绿色技术改造提升传统产业。", "kw": "改造提升传统产业"}, {"id": "__c__十五五规划_产能监测预警机制", "label": "产能监测预警机制", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十五五规划", "inf": "手段", "rel": "同句", "verb": "健全", "basis": "健全产能监测预警机制，采取规划引导、产能调控、价格治理、行业自律等措施，综合整治\"内卷式\"竞争。", "kw": "产能监测预警机制"}, {"id": "__c__十五五规划_规划引导", "label": "规划引导", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十五五规划", "inf": "手段", "rel": "同句", "verb": "采取", "basis": "健全产能监测预警机制，采取规划引导、产能调控、价格治理、行业自律等措施，综合整治\"内卷式\"竞争。", "kw": "规划引导"}, {"id": "__c__十五五规划_产能调控", "label": "产能调控", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十五五规划", "inf": "手段", "rel": "同句", "verb": "采取", "basis": "健全产能监测预警机制，采取规划引导、产能调控、价格治理、行业自律等措施，综合整治\"内卷式\"竞争。", "kw": "产能调控"}, {"id": "__c__十五五规划_价格治理", "label": "价格治理", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十五五规划", "inf": "手段", "rel": "同句", "verb": "采取", "basis": "健全产能监测预警机制，采取规划引导、产能调控、价格治理、行业自律等措施，综合整治\"内卷式\"竞争。", "kw": "价格治理"}, {"id": "__c__十五五规划_行业自律", "label": "行业自律", "type": "concept", "color": "#4a9ede", "r": 10, "doc": "十五五规划", "inf": "手段", "rel": "同句", "verb": "采取", "basis": "健全产能监测预警机制，采取规划引导、产能调控、价格治理、行业自律等措施，综合整治\"内卷式\"竞争。", "kw": "行业自律"}, {"id": "__c__十五五规划_产业健康有序发展促进机制", "label": "产业健康有序发展促进机制", "type": "concept", "color": "#f39c12", "r": 10, "doc": "十五五规划", "inf": "母题", "rel": "母题", "verb": "健全", "basis": "第三节 健全产业健康有序发展促进机制", "kw": "健全产业健康有序发展促进机制"}, {"id": "__c__十五五规划_传统产业", "label": "传统产业", "type": "concept", "color": "#f39c12", "r": 10, "doc": "十五五规划", "inf": "母题", "rel": "母题的母题", "verb": "优化提升", "basis": "第四章 优化提升传统产业", "kw": "优化提升传统产业"}, {"id": "__c__十五五规划_现代化产业体系", "label": "现代化产业体系", "type": "concept", "color": "#f39c12", "r": 10, "doc": "十五五规划", "inf": "母题", "rel": "母题的母题的母题", "verb": "建设", "basis": "第二篇 建设现代化产业体系 巩固壮大实体经济根基", "kw": "建设现代化产业体系 巩固壮大实体经济根基"}];
+const RAW_LINKS = [{"source": "__center__", "target": "__doc__中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "type": "doc-link", "strength": 3, "color": "#4b5563", "verb": "", "inf": ""}, {"source": "__center__", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "doc-link", "strength": 3, "color": "#4b5563", "verb": "", "inf": ""}, {"source": "__center__", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "doc-link", "strength": 3, "color": "#4b5563", "verb": "", "inf": ""}, {"source": "__center__", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "doc-link", "strength": 3, "color": "#4b5563", "verb": "", "inf": ""}, {"source": "__center__", "target": "__doc__十五五规划", "type": "doc-link", "strength": 3, "color": "#4b5563", "verb": "", "inf": ""}, {"source": "__c__中共中央政治_行业自律", "target": "__doc__中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "强化", "inf": "手段"}, {"source": "__c__中共中央政治_新兴产业和未来产业", "target": "__doc__中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "type": "concept-link", "strength": 2, "color": "#f39c12", "verb": "培育壮大", "inf": "母题"}, {"source": "__c__中共中央政治_高水平科技自立自强", "target": "__doc__中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "推进", "inf": "手段"}, {"source": "__c__中共中央政治_关键核心技术", "target": "__doc__中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "攻关", "inf": "手段"}, {"source": "__c__中共中央政治_传统产业转型升级", "target": "__doc__中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "type": "concept-link", "strength": 4, "color": "#27ae60", "verb": "推动", "inf": "目标"}, {"source": "__c__中共中央政治_瞪羚企业", "target": "__doc__中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "支持发展", "inf": "手段"}, {"source": "__c__中共中央政治_独角兽企业", "target": "__doc__中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "支持发展", "inf": "手段"}, {"source": "__c__中共中央政治_市场优胜劣汰机制", "target": "__doc__中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "强化", "inf": "手段"}, {"source": "__c__中共中央政治_落后低效产能退出渠道", "target": "__doc__中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "畅通", "inf": "手段"}, {"source": "__c__中共中央政治_落后低效产能", "target": "__doc__中共中央政治局会议 审议《整治形式主义为基层减负若干规定》", "type": "concept-link", "strength": 4, "color": "#e74c3c", "verb": "", "inf": "治理对象"}, {"source": "__c__十四届全国人_全国统一大市场建设指引", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "实施", "inf": "手段"}, {"source": "__c__十四届全国人_新版市场准入负面清单", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "出台", "inf": "手段"}, {"source": "__c__十四届全国人_招标投标领域突出问题", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 5, "color": "#e74c3c", "verb": "整治", "inf": "治理对象"}, {"source": "__c__十四届全国人_招商引资领域突出问题", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 5, "color": "#e74c3c", "verb": "整治", "inf": "治理对象"}, {"source": "__c__十四届全国人_重点行业产能治理", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "推进", "inf": "手段"}, {"source": "__c__十四届全国人_治理成效", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 5, "color": "#1abc9c", "verb": "显现", "inf": "结果"}, {"source": "__c__十四届全国人_改革开放", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 2, "color": "#f39c12", "verb": "深化", "inf": "母题"}, {"source": "__c__十四届全国人_国民经济循环", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 2, "color": "#27ae60", "verb": "畅通", "inf": "目标"}, {"source": "__c__十四届全国人_2025年工作回顾", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 1, "color": "#f39c12", "verb": "", "inf": "母题"}, {"source": "__c__十四届全国人_二十届三中全会改革部署", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#95a5a6", "verb": "落实", "inf": "制度来源"}, {"source": "__c__十四届全国人_要素市场化配置综合改革试点", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "开展", "inf": "手段"}, {"source": "__c__十四届全国人_国有企业改革", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "深化提升", "inf": "手段"}, {"source": "__c__十四届全国人_民间投资发展", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "促进", "inf": "手段"}, {"source": "__c__十四届全国人_拖欠企业账款", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "清理", "inf": "手段"}, {"source": "__c__十四届全国人_反垄断", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "加强", "inf": "手段"}, {"source": "__c__十四届全国人_反不正当竞争", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "加强", "inf": "手段"}, {"source": "__c__十四届全国人_公平竞争审查刚性约束", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "强化", "inf": "手段"}, {"source": "__c__十四届全国人_产能调控", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "运用", "inf": "手段"}, {"source": "__c__十四届全国人_标准引领", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "运用", "inf": "手段"}, {"source": "__c__十四届全国人_价格执法", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "运用", "inf": "手段"}, {"source": "__c__十四届全国人_质量监管", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "运用", "inf": "手段"}, {"source": "__c__十四届全国人_良好市场生态", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 5, "color": "#27ae60", "verb": "营造", "inf": "目标"}, {"source": "__c__十四届全国人_重点领域改革", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 2, "color": "#f39c12", "verb": "持续深化", "inf": "母题"}, {"source": "__c__十四届全国人_高水平社会主义市场经济体制", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 3, "color": "#27ae60", "verb": "构建", "inf": "目标"}, {"source": "__c__十四届全国人_改革攻坚", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 3, "color": "#4a9ede", "verb": "强化", "inf": "手段"}, {"source": "__c__十四届全国人_体制机制障碍", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 3, "color": "#e74c3c", "verb": "破除", "inf": "治理对象"}, {"source": "__c__十四届全国人_高质量发展动力活力", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 3, "color": "#27ae60", "verb": "增强", "inf": "目标"}, {"source": "__c__十四届全国人_2026年政府工作任务", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 1, "color": "#f39c12", "verb": "", "inf": "母题"}, {"source": "__c__十四届全国人_全国统一大市场建设", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#27ae60", "verb": "纵深推进", "inf": "目标"}, {"source": "__c__十四届全国人_全国统一大市场建设条例", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "制定", "inf": "手段"}, {"source": "__c__十四届全国人_统计财税考核制度", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "完善", "inf": "手段"}, {"source": "__c__十四届全国人_地方政府经济促进行为", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "规范", "inf": "手段"}, {"source": "__c__十四届全国人_招商引资鼓励和禁止事项清单", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "出台", "inf": "手段"}, {"source": "__c__十四届全国人_税收优惠财政补贴政策", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "规范", "inf": "手段"}, {"source": "__c__十四届全国人_招标投标体制机制改革", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "深化", "inf": "手段"}, {"source": "__c__十四届全国人_试点范围", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "纳入", "inf": "手段"}, {"source": "__c__十四届全国人_综合交通运输体系改革", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "深化", "inf": "手段"}, {"source": "__c__十四届全国人_全社会物流成本", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#27ae60", "verb": "降低", "inf": "目标"}, {"source": "__c__十四届全国人_公用事业价格改革", "target": "__doc__十四届全国人大四次会议 政府工作报告", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "推进", "inf": "手段"}, {"source": "__c__二十届四中全_全国统一大市场卡点堵点", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 2, "color": "#f39c12", "verb": "破除", "inf": "母题"}, {"source": "__c__二十届四中全_强大国内市场", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 1, "color": "#f39c12", "verb": "建设", "inf": "母题"}, {"source": "__c__二十届四中全_市场基础制度规则", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "统一", "inf": "手段"}, {"source": "__c__二十届四中全_产权保护制度", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "完善", "inf": "手段"}, {"source": "__c__二十届四中全_市场准入制度", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "完善", "inf": "手段"}, {"source": "__c__二十届四中全_信息披露制度", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "完善", "inf": "手段"}, {"source": "__c__二十届四中全_社会信用制度", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "完善", "inf": "手段"}, {"source": "__c__二十届四中全_兼并重组制度", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "完善", "inf": "手段"}, {"source": "__c__二十届四中全_市场退出制度", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "完善", "inf": "手段"}, {"source": "__c__二十届四中全_要素获取壁垒", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#e74c3c", "verb": "消除", "inf": "治理对象"}, {"source": "__c__二十届四中全_资质认定壁垒", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#e74c3c", "verb": "消除", "inf": "治理对象"}, {"source": "__c__二十届四中全_招标投标壁垒", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#e74c3c", "verb": "消除", "inf": "治理对象"}, {"source": "__c__二十届四中全_政府采购壁垒", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#e74c3c", "verb": "消除", "inf": "治理对象"}, {"source": "__c__二十届四中全_地方政府经济促进行为", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "规范", "inf": "手段"}, {"source": "__c__二十届四中全_地方保护", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#e74c3c", "verb": "破除", "inf": "治理对象"}, {"source": "__c__二十届四中全_市场分割", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#e74c3c", "verb": "破除", "inf": "治理对象"}, {"source": "__c__二十届四中全_市场监管执法", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "统一", "inf": "手段"}, {"source": "__c__二十届四中全_质量监管", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "加强", "inf": "手段"}, {"source": "__c__二十届四中全_行政裁量权基准制度", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "完善", "inf": "手段"}, {"source": "__c__二十届四中全_反垄断执法司法", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "强化", "inf": "手段"}, {"source": "__c__二十届四中全_反不正当竞争执法司法", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "强化", "inf": "手段"}, {"source": "__c__二十届四中全_优质优价良性竞争市场秩序", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#27ae60", "verb": "形成", "inf": "目标"}, {"source": "__c__二十届四中全_流通规则和标准", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "健全", "inf": "手段"}, {"source": "__c__二十届四中全_市场设施", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "联通", "inf": "手段"}, {"source": "__c__二十届四中全_全社会物流成本", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#27ae60", "verb": "降低", "inf": "目标"}, {"source": "__c__二十届四中全_统计制度", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "完善", "inf": "手段"}, {"source": "__c__二十届四中全_财税制度", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "完善", "inf": "手段"}, {"source": "__c__二十届四中全_考核制度", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "完善", "inf": "手段"}, {"source": "__c__二十届四中全_利益分享机制", "target": "__doc__二十届四中全会 中共中央关于制定国民经济和社会发展第十五个五年规划的建议", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "优化", "inf": "手段"}, {"source": "__c__中央经济工作_地方政府行为", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "规范", "inf": "手段"}, {"source": "__c__中央经济工作_企业行为", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "规范", "inf": "手段"}, {"source": "__c__中央经济工作_新质生产力发展", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 2, "color": "#f39c12", "verb": "科技创新引领", "inf": "母题"}, {"source": "__c__中央经济工作_有效市场和有为政府", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 3, "color": "#9b59b6", "verb": "统筹", "inf": "原则"}, {"source": "__c__中央经济工作_经济秩序", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 3, "color": "#27ae60", "verb": "放得活管得住", "inf": "目标"}, {"source": "__c__中央经济工作_国民经济循环", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 3, "color": "#27ae60", "verb": "畅通", "inf": "目标"}, {"source": "__c__中央经济工作_新质生产力", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 3, "color": "#27ae60", "verb": "发展", "inf": "目标"}, {"source": "__c__中央经济工作_资源配置效率", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 3, "color": "#27ae60", "verb": "提高", "inf": "目标"}, {"source": "__c__中央经济工作_基础研究", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "加强", "inf": "手段"}, {"source": "__c__中央经济工作_关键核心技术", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "攻关", "inf": "手段"}, {"source": "__c__中央经济工作_重大科技项目", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "布局", "inf": "手段"}, {"source": "__c__中央经济工作_新技术新产品新场景应用示范", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "开展", "inf": "手段"}, {"source": "__c__中央经济工作_\"人工智能+\"行动", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "开展", "inf": "手段"}, {"source": "__c__中央经济工作_未来产业", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 4, "color": "#27ae60", "verb": "培育", "inf": "目标"}, {"source": "__c__中央经济工作_国家战略科技力量", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "加强", "inf": "手段"}, {"source": "__c__中央经济工作_多层次金融服务体系", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "健全", "inf": "手段"}, {"source": "__c__中央经济工作_耐心资本", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "壮大", "inf": "手段"}, {"source": "__c__中央经济工作_社会资本参与创业投资", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "吸引", "inf": "手段"}, {"source": "__c__中央经济工作_创新型企业", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "梯度培育", "inf": "手段"}, {"source": "__c__中央经济工作_数字技术", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "运用", "inf": "手段"}, {"source": "__c__中央经济工作_绿色技术", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 4, "color": "#4a9ede", "verb": "运用", "inf": "手段"}, {"source": "__c__中央经济工作_传统产业", "target": "__doc__中央经济工作会议上习近平的重要讲话", "type": "concept-link", "strength": 4, "color": "#27ae60", "verb": "改造提升", "inf": "目标"}, {"source": "__c__十五五规划_产能监测预警机制", "target": "__doc__十五五规划", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "健全", "inf": "手段"}, {"source": "__c__十五五规划_规划引导", "target": "__doc__十五五规划", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "采取", "inf": "手段"}, {"source": "__c__十五五规划_产能调控", "target": "__doc__十五五规划", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "采取", "inf": "手段"}, {"source": "__c__十五五规划_价格治理", "target": "__doc__十五五规划", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "采取", "inf": "手段"}, {"source": "__c__十五五规划_行业自律", "target": "__doc__十五五规划", "type": "concept-link", "strength": 5, "color": "#4a9ede", "verb": "采取", "inf": "手段"}, {"source": "__c__十五五规划_产业健康有序发展促进机制", "target": "__doc__十五五规划", "type": "concept-link", "strength": 2, "color": "#f39c12", "verb": "健全", "inf": "母题"}, {"source": "__c__十五五规划_传统产业", "target": "__doc__十五五规划", "type": "concept-link", "strength": 1, "color": "#f39c12", "verb": "优化提升", "inf": "母题"}, {"source": "__c__十五五规划_现代化产业体系", "target": "__doc__十五五规划", "type": "concept-link", "strength": 0.5, "color": "#f39c12", "verb": "建设", "inf": "母题"}];
+const INF_COLORS = {"手段": "#4a9ede", "治理对象": "#e74c3c", "目标": "#27ae60", "母题": "#f39c12", "原则": "#9b59b6", "结果": "#1abc9c", "制度来源": "#95a5a6"};
+
+// ── 工具函数 ──────────────────────────────────────
+// 汉字文本自动换行（最多两行，尽量对半分）
+function wrapText(text, maxPerLine) {
+  if (!text) return [''];
+  if (text.length <= maxPerLine) return [text];
+  const mid = Math.ceil(text.length / 2);
+  return [text.slice(0, mid), text.slice(mid)];
+}
+
+// 根据标签文本估算概念节点半径（fs=11px，每汉字宽约11px）
+function conceptRadius(label) {
+  const lines = wrapText(label, 5);
+  const maxLine = Math.max(...lines.map(l => l.length));
+  return Math.max(28, maxLine * 6.5 + 14);
+}
+
+// ── 构建谓词节点（共享，按唯一谓词合并）───────────
+function buildVerbNodes(conceptNodes) {
+  const verbMap = {};
+  conceptNodes.forEach(d => {
+    if (d.verb) {
+      if (!verbMap[d.verb]) verbMap[d.verb] = [];
+      verbMap[d.verb].push(d);
+    }
+  });
+  const verbNodes = Object.entries(verbMap).map(([verb, members]) => ({
+    id: '__verb__' + verb,
+    label: verb,
+    type: 'verb',
+    color: '#7ea8c0',
+    r: 11,
+    doc: '', basis: '', verb: verb, inf: '',
+    _count: members.length,
+    _members: members,
+  }));
+  const verbLinks = [];
+  verbNodes.forEach(vn => {
+    vn._members.forEach(c => {
+      verbLinks.push({
+        source: vn.id, target: c.id,
+        type: 'verb-link', strength: 4,
+        color: c.color,   // 与概念推断关系颜色一致
+        verb: vn.verb, inf: c.inf,
+      });
+    });
+  });
+  return {verbNodes, verbLinks};
+}
+
+// ── svg / zoom ────────────────────────────────────
+const svg   = d3.select('#canvas');
+const gRoot = svg.append('g');
+const zoom  = d3.zoom().scaleExtent([0.05, 6]).on('zoom', e => gRoot.attr('transform', e.transform));
+svg.call(zoom);
+
+const W = () => svg.node().clientWidth;
+const H = () => svg.node().clientHeight;
+
+let currentView = 'raw';
+let activeInf   = 'all';
+let activeDoc   = 'all';
+let gLinks, gNodes;
+let sim = null;
+
+function stopSim() { if (sim) { sim.stop(); sim = null; } }
+
+// ── 视图构建 ──────────────────────────────────────
+
+function buildRaw() {
+  const conceptNodes = RAW_NODES.filter(d => d.type === 'concept');
+  const {verbNodes, verbLinks} = buildVerbNodes(conceptNodes);
+  const nodes = [...RAW_NODES.map(d => ({...d})), ...verbNodes];
+  const links = [...RAW_LINKS.map(d => ({...d})), ...verbLinks];
+  return {nodes, links};
+}
+
+function buildConnect() {
+  const conceptNodes = RAW_NODES.filter(d => d.type === 'concept');
+  const {verbNodes, verbLinks} = buildVerbNodes(conceptNodes);
+  // concept nodes with new ids so we can map verb links to them
+  const conceptCopies = conceptNodes.map(d => ({...d}));
+  const links = [];
+  conceptCopies.forEach(n => {
+    links.push({
+      source: n.id, target: '__center__',
+      type: 'concept-link', strength: 3, color: n.color, verb: n.verb, inf: n.inf
+    });
+  });
+  // remap verb links to same concept ids
+  verbLinks.forEach(l => links.push({...l}));
+  const nodes = [
+    RAW_NODES.find(d => d.type === 'center'),
+    ...conceptCopies,
+    ...verbNodes,
+  ].map(d => ({...d}));
+  return {nodes, links};
+}
+
+function buildMergeObj() {
+  const concepts = RAW_NODES.filter(d => d.type === 'concept');
+  const byLabel = {};
+  concepts.forEach(c => {
+    if (!byLabel[c.label]) byLabel[c.label] = [];
+    byLabel[c.label].push(c);
+  });
+  const mergedConcepts = Object.values(byLabel).map(arr => {
+    const base = arr[0];
+    const docSet = [...new Set(arr.map(x => x.doc))];
+    return {
+      ...base,
+      id: '__m__' + base.label,
+      r: Math.min(22, 8 + docSet.length * 3),
+      _docs: docSet, _count: arr.length,
+      _allInf: [...new Set(arr.map(x => x.inf))],
+      _allVerb: [...new Set(arr.map(x => x.verb).filter(Boolean))],
+    };
+  });
+  const nodes = [RAW_NODES.find(d => d.type==='center'), ...mergedConcepts].map(d => ({...d}));
+  const links = mergedConcepts.map(n => ({
+    source: n.id, target: '__center__',
+    type: 'concept-link', strength: 3, color: n.color, verb: n.verb, inf: n.inf
+  }));
+  return {nodes, links};
+}
+
+function buildMergeInf() {
+  const INF_LIST = Object.keys(INF_COLORS);
+  const concepts = RAW_NODES.filter(d => d.type === 'concept');
+  const groups = {};
+  concepts.forEach(c => { if (!groups[c.inf]) groups[c.inf]=[]; groups[c.inf].push(c); });
+  const groupNodes = INF_LIST.filter(inf => groups[inf]).map(inf => ({
+    id: '__g__' + inf, label: inf, type: 'group',
+    color: INF_COLORS[inf]||'#888',
+    r: Math.min(40, 14 + (groups[inf]?.length||0) * 0.3),
+    inf, doc:'', basis:'', verb:'',
+    _count: groups[inf]?.length || 0, _members: groups[inf]||[],
+  }));
+  const memberNodes=[], memberLinks=[];
+  groupNodes.forEach(g => {
+    g._members.forEach(c => {
+      const mn = {...c, id:'__gm__'+g.inf+'_'+c.label};
+      memberNodes.push(mn);
+      memberLinks.push({source:mn.id,target:g.id,type:'member-link',strength:4,color:g.color,verb:c.verb,inf:c.inf});
+    });
+  });
+  const nodes = [RAW_NODES.find(d=>d.type==='center'), ...groupNodes, ...memberNodes].map(d=>({...d}));
+  const links = [
+    ...groupNodes.map(g => ({source:'__center__',target:g.id,type:'group-link',strength:2,color:g.color,verb:'',inf:g.inf})),
+    ...memberLinks,
+  ];
+  return {nodes, links};
+}
+
+function buildMergeVerb() {
+  const concepts = RAW_NODES.filter(d => d.type==='concept' && d.verb);
+  const groups = {};
+  concepts.forEach(c => { if (!groups[c.verb]) groups[c.verb]=[]; groups[c.verb].push(c); });
+  const topVerbs = Object.keys(groups).sort((a,b)=>groups[b].length-groups[a].length).slice(0,25);
+  const groupNodes = topVerbs.map(verb => {
+    const infCount = {};
+    groups[verb].forEach(c => infCount[c.inf]=(infCount[c.inf]||0)+1);
+    const topInf = Object.keys(infCount).sort((a,b)=>infCount[b]-infCount[a])[0];
+    return {
+      id:'__v__'+verb, label:verb, type:'group',
+      color: INF_COLORS[topInf]||'#8899aa',
+      r: Math.min(36, 12 + groups[verb].length * 0.7),
+      inf:topInf, doc:'', basis:'', verb,
+      _count: groups[verb].length, _members: groups[verb],
+    };
+  });
+  const memberNodes=[], memberLinks=[];
+  groupNodes.forEach(g => {
+    g._members.forEach(c => {
+      const mn = {...c, id:'__vm__'+g.verb+'_'+c.label};
+      memberNodes.push(mn);
+      memberLinks.push({source:mn.id,target:g.id,type:'member-link',strength:4,color:g.color,verb:c.verb,inf:c.inf});
+    });
+  });
+  const nodes = [RAW_NODES.find(d=>d.type==='center'), ...groupNodes, ...memberNodes].map(d=>({...d}));
+  const links = [
+    ...groupNodes.map(g=>({source:'__center__',target:g.id,type:'group-link',strength:2,color:g.color,verb:g.verb,inf:g.inf})),
+    ...memberLinks,
+  ];
+  return {nodes, links};
+}
+
+// ── 渲染主函数 ────────────────────────────────────
+function render(view) {
+  stopSim();
+  gRoot.selectAll('*').remove();
+
+  let {nodes, links} = (
+    view==='raw'        ? buildRaw()       :
+    view==='connect'    ? buildConnect()   :
+    view==='merge-obj'  ? buildMergeObj()  :
+    view==='merge-inf'  ? buildMergeInf()  :
+    view==='merge-verb' ? buildMergeVerb() :
+    buildRaw()
+  );
+
+  // 固定中心节点
+  nodes.forEach(d => { if (d.type==='center') { d.fx=0; d.fy=0; } });
+
+  gLinks = gRoot.append('g').attr('class','links');
+  gNodes = gRoot.append('g').attr('class','nodes');
+
+  // ── 连线 ─────────────────────────────────────────
+  const linkSel = gLinks.selectAll('line').data(links).join('line')
+    .attr('stroke', d => d.color || '#334')
+    .attr('stroke-width', d =>
+      d.type==='doc-link'    ? 2   :
+      d.type==='group-link'  ? 2.5 :
+      d.type==='member-link' ? 0.8 :
+      d.type==='verb-link'   ? 1   :
+      Math.max(0.5, (d.strength||2)*0.35))
+    .attr('stroke-opacity', d =>
+      d.type==='doc-link'    ? 0.5  :
+      d.type==='group-link'  ? 0.6  :
+      d.type==='member-link' ? 0.22 :
+      d.type==='verb-link'   ? 0.5  :
+      0.38)
+    .attr('stroke-dasharray', d =>
+      d.type==='verb-link'   ? '4,3' :
+      d.type==='member-link' ? '2,2' :
+      (d.strength||5) < 2   ? '4,3' : null);
+
+  // ── 节点 ─────────────────────────────────────────
+  const nodeSel = gNodes.selectAll('g.node').data(nodes, d => d.id).join('g')
+    .attr('class', d => 'node node-' + d.type)
+    .call(d3.drag()
+      .on('start', (e,d) => { if(!e.active) sim.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; })
+      .on('drag',  (e,d) => { d.fx=e.x; d.fy=e.y; })
+      .on('end',   (e,d) => { if(!e.active) sim.alphaTarget(0); if(d.type!=='center'){d.fx=null;d.fy=null;} }));
+
+  // 中心光晕
+  nodeSel.filter(d => d.type==='center').append('circle')
+    .attr('r', d => d.r+16).attr('fill','none')
+    .attr('stroke','#c0392b').attr('stroke-width',1.5).attr('stroke-opacity',0.18);
+
+  // 主圆
+  nodeSel.append('circle')
+    .attr('r', d => {
+      if (d.type==='concept') return conceptRadius(d.label);
+      return d.r;
+    })
+    .attr('fill', d => d.color)
+    .attr('fill-opacity', d =>
+      d.type==='verb'    ? 0.55 :
+      d.type==='concept' ? 0.80 :
+      d.type==='group'   ? 0.80 : 0.88)
+    .attr('stroke', d =>
+      d.type==='center'  ? '#e74c3c' :
+      d.type==='doc'     ? '#9aa0a8' :
+      d.type==='verb'    ? '#9ac4da' : 'none')
+    .attr('stroke-width', d =>
+      d.type==='center' ? 3 :
+      d.type==='doc'    ? 1.5 :
+      d.type==='verb'   ? 1 : 0)
+    .attr('stroke-opacity', 0.7);
+
+  // 标签
+  nodeSel.append('text')
+    .attr('text-anchor','middle').attr('dominant-baseline','central')
+    .attr('fill','#fff').attr('pointer-events','none')
+    .each(function(d) {
+      const el = d3.select(this);
+      const isCenter = d.type==='center';
+      const isDoc    = d.type==='doc';
+      const isVerb   = d.type==='verb';
+      const isGroup  = d.type==='group';
+
+      // 中心和文件节点按\n手动换行，概念节点完整显示最多两行
+      let lines;
+      if (isCenter || isDoc) {
+        lines = d.label.split('\n');
+      } else if (isVerb) {
+        lines = [d.label];
+      } else if (isGroup) {
+        lines = [d.label];
+      } else {
+        // concept：完整显示，超过5字换行
+        lines = wrapText(d.label, 5);
+      }
+
+      const fs = isCenter ? 15 : isDoc ? 11 : isVerb ? 10 : isGroup ? 12 : 11;
+      el.attr('font-size', fs)
+        .attr('font-weight', isCenter||isGroup ? '700' : isVerb ? '600' : '400');
+
+      const lineH = fs + 2.5;
+      const startDy = -((lines.length - 1) / 2) * lineH;
+      lines.forEach((ln, i) => {
+        el.append('tspan')
+          .attr('x', 0)
+          .attr('dy', i===0 ? startDy : lineH)
+          .text(ln);
+      });
+    });
+
+  // ── Tooltip ──────────────────────────────────────
+  const tt = document.getElementById('tooltip');
+  nodeSel.on('mousemove', (e,d) => {
+    if (d.type==='center') return;
+    let html = `<div class="tt-label">${d.label}</div>`;
+    if (d.type==='doc') {
+      const cnt = RAW_NODES.filter(n=>n.doc===d.doc&&n.type==='concept').length;
+      html += `<div class="tt-row">文件：<span>${d.doc}</span></div>`;
+      html += `<div class="tt-row">概念节点数：<span>${cnt}</span></div>`;
+    } else if (d.type==='verb') {
+      html += `<div class="tt-row">类型：<span>谓词</span></div>`;
+      html += `<div class="tt-row">关联概念数：<span>${d._count}</span></div>`;
+      const sample = d._members.slice(0,4).map(m=>m.label).join('、');
+      html += `<div class="tt-basis">关联对象：${sample}${d._count>4?'…':''}</div>`;
+    } else if (d.type==='group') {
+      html += `<div class="tt-row">分组依据：<span>${d.inf||d.verb||''}</span></div>`;
+      html += `<div class="tt-row">包含概念数：<span>${d._count}</span></div>`;
+    } else {
+      if (d.verb) html += `<div class="tt-verb">谓词：${d.verb}</div>`;
+      html += `<div class="tt-row">推断关系：<span>${d.inf}</span></div>`;
+      html += `<div class="tt-row">文本关系：<span>${d.rel||''}</span></div>`;
+      if (d.doc) html += `<div class="tt-row">来源：<span>${d.doc.slice(0,18)}…</span></div>`;
+      if (d.basis) html += `<div class="tt-basis">${d.basis.slice(0,140)}${d.basis.length>140?'…':''}</div>`;
+    }
+    tt.innerHTML = html;
+    tt.style.display = 'block';
+    const tx = Math.min(e.clientX+14, window.innerWidth-tt.offsetWidth-10);
+    const ty = Math.min(e.clientY-10,  window.innerHeight-tt.offsetHeight-16);
+    tt.style.left = tx+'px'; tt.style.top = ty+'px';
+  }).on('mouseleave', () => { tt.style.display='none'; });
+
+  // ── 力导向仿真 ────────────────────────────────────
+  const isFlat = (view==='connect'||view==='merge-obj');
+  const hasVerbs = (view==='raw'||view==='connect');
+
+  sim = d3.forceSimulation(nodes)
+    .alphaDecay(0.03)
+    .force('link', d3.forceLink(links).id(d=>d.id)
+      .distance(d => {
+        if (d.type==='doc-link'||d.type==='group-link') return isFlat ? 360 : 300;
+        if (d.type==='member-link') return 150;
+        if (d.type==='verb-link')   return 110;
+        const s = d.strength||2;
+        return 360 - s*26;
+      })
+      .strength(d =>
+        d.type==='doc-link'||d.type==='group-link' ? 0.45 :
+        d.type==='member-link' ? 0.5 :
+        d.type==='verb-link'   ? 0.4 :
+        0.28))
+    .force('charge', d3.forceManyBody().strength(d =>
+      d.type==='center'  ? -2400 :
+      d.type==='doc'     ? -900  :
+      d.type==='group'   ? -1000 :
+      d.type==='verb'    ? -250  :
+      // concept: repulsion scales with bubble size
+      -(conceptRadius(d.label) * 20)))
+    .force('collide', d3.forceCollide(d => {
+      if (d.type==='concept') return conceptRadius(d.label) + 18;
+      if (d.type==='verb')    return d.r + 12;
+      return d.r + 10;
+    }).strength(0.92).iterations(4))
+    .force('x', d3.forceX(0).strength(0.015))
+    .force('y', d3.forceY(0).strength(0.015))
+    .on('end', autoFit)
+    .on('tick', () => {
+      linkSel
+        .attr('x1', d=>d.source.x).attr('y1', d=>d.source.y)
+        .attr('x2', d=>d.target.x).attr('y2', d=>d.target.y);
+      nodeSel.attr('transform', d=>`translate(${d.x},${d.y})`);
+    });
+}
+
+// ── 自动适应视口 ────────────────────────────────────
+function autoFit() {
+  if (!gNodes) return;
+  let xMin=Infinity, xMax=-Infinity, yMin=Infinity, yMax=-Infinity;
+  gNodes.selectAll('g.node').each(function(d) {
+    const r = (d.type==='concept' ? conceptRadius(d.label) : (d.r||20)) + 18;
+    if (isFinite(d.x)) { xMin=Math.min(xMin,d.x-r); xMax=Math.max(xMax,d.x+r); }
+    if (isFinite(d.y)) { yMin=Math.min(yMin,d.y-r); yMax=Math.max(yMax,d.y+r); }
+  });
+  if (!isFinite(xMin)) return;
+  const pad = 24;
+  const sc = Math.min(
+    W() / (xMax - xMin + pad*2),
+    H() / (yMax - yMin + pad*2)
+  );
+  const tx = W()/2 - sc * (xMin + xMax)/2;
+  const ty = H()/2 - sc * (yMin + yMax)/2;
+  svg.transition().duration(700)
+     .call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(sc));
+}
+
+// ── 筛选 ──────────────────────────────────────────
+function applyFilters() {
+  if (!gNodes || !gLinks) return;
+  gNodes.selectAll('g.node').each(function(d) {
+    let show = true;
+    if (d.type==='concept') {
+      if (activeInf!=='all' && d.inf!==activeInf) show=false;
+      if (activeDoc!=='all' && d.doc!==activeDoc) show=false;
+    } else if (d.type==='doc') {
+      if (activeDoc!=='all' && d.doc!==activeDoc) show=false;
+    } else if (d.type==='verb') {
+      // 谓词节点：若所有关联概念都被筛掉，则也淡化
+      if (activeInf!=='all' || activeDoc!=='all') {
+        const visibleMem = (d._members||[]).filter(m =>
+          (activeInf==='all'||m.inf===activeInf) &&
+          (activeDoc==='all'||m.doc===activeDoc));
+        if (visibleMem.length===0) show=false;
+      }
+    }
+    d3.select(this).attr('opacity', show ? 1 : 0.05);
+  });
+  gLinks.selectAll('line').each(function(d) {
+    const src = d.source, tgt = d.target;
+    let show = true;
+    if (d.type==='concept-link') {
+      if (activeInf!=='all' && src.inf!==activeInf) show=false;
+      if (activeDoc!=='all' && src.doc!==activeDoc) show=false;
+    } else if (d.type==='doc-link') {
+      if (activeDoc!=='all' && tgt.doc!==activeDoc) show=false;
+    } else if (d.type==='verb-link') {
+      if (activeInf!=='all' && tgt.inf!==activeInf) show=false;
+      if (activeDoc!=='all' && tgt.doc!==activeDoc) show=false;
+    }
+    d3.select(this).attr('opacity', show ? 1 : 0.02);
+  });
+}
+
+// ── 事件 ──────────────────────────────────────────
+document.querySelectorAll('.view-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentView = btn.dataset.view;
+    const names = {raw:'原始视图',connect:'对象直连','merge-obj':'按对象合并','merge-inf':'按推断关系合并','merge-verb':'按谓词合并'};
+    document.getElementById('subtitle').textContent =
+      `2024—2026 · 5份文件 · 108 个概念节点 · ${names[currentView]}`;
+    render(currentView);
+    svg.call(zoom.transform, d3.zoomIdentity.translate(W()/2, H()/2).scale(0.45));
+    if (window._fitTimer) clearTimeout(window._fitTimer);
+    window._fitTimer = setTimeout(autoFit, 3200);
+  });
+});
+
+document.querySelectorAll('.filter-btn[data-inf]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn[data-inf]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeInf = btn.dataset.inf;
+    applyFilters();
+  });
+});
+
+document.querySelectorAll('.filter-btn[data-doc]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn[data-doc]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeDoc = btn.dataset.doc;
+    applyFilters();
+  });
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  activeInf='all'; activeDoc='all';
+  document.querySelectorAll('.filter-btn[data-inf]').forEach(b=>b.classList.remove('active'));
+  document.querySelector('[data-inf="all"]').classList.add('active');
+  document.querySelectorAll('.filter-btn[data-doc]').forEach(b=>b.classList.remove('active'));
+  document.querySelector('[data-doc="all"]').classList.add('active');
+  applyFilters();
+  autoFit();
+});
+
+// ── 初始化 ────────────────────────────────────────
+render('raw');
+svg.call(zoom.transform, d3.zoomIdentity.translate(W()/2, H()/2).scale(0.45));
+if (window._fitTimer) clearTimeout(window._fitTimer);
+window._fitTimer = setTimeout(autoFit, 3200);
+</script>
+</body>
+</html>
